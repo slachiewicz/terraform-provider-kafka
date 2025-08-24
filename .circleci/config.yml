@@ -10,16 +10,11 @@ jobs:
           path: terraform-provider-kafka
           destination: terraform-provider-kafka
 
-  test:
-    docker:
-      - image: cimg/go:1.24
-        environment:
-          TEST_RESULTS: /tmp/test-results
+  setup-kafka:
+    machine:
+      image: ubuntu-2204:current
     steps:
       - checkout
-      - run: make test
-      - run: go install github.com/jstemmer/go-junit-report/v2@latest
-      - run: mkdir -p $TEST_RESULTS
       - run:
           name: Setup env
           command: |
@@ -30,9 +25,18 @@ jobs:
             docker compose up --detach
             sleep 10
             docker compose ps
-            docker logs project-kafka1-1
-            docker logs project-kafka2-1
-            docker logs project-kafka3-1
+  test:
+    docker:
+      - image: cimg/go:1.24
+        environment:
+          TEST_RESULTS: /tmp/test-results
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: make test
+      - run: go install github.com/jstemmer/go-junit-report/v2@latest
+      - run: mkdir -p $TEST_RESULTS
+      - run: docker compose ps
       - run:
           name: Run Tests
           command: |
