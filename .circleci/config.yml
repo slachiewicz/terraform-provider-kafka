@@ -25,6 +25,8 @@ jobs:
           command: |
             pwd
             ls -las ./secrets
+            systemctl status docker
+            systemctl start docker
             docker compose up --detach
             sleep 10
             docker compose ps
