@@ -25,7 +25,17 @@ jobs:
       - run: make test
       - run: go install github.com/jstemmer/go-junit-report/v2@latest
       - run: mkdir -p $TEST_RESULTS
-      - run: docker compose up --detach --wait && sleep 10 && docker compose ps
+      - run:
+          name: Setup env
+          command: |
+            pwd
+            ls -las ./secrets
+            docker compose up --detach
+            sleep 10
+            docker compose ps
+            docker logs terraform-provider-kafka-kafka1-1
+            docker logs terraform-provider-kafka-kafka2-1
+            docker logs terraform-provider-kafka-kafka3-1
       - run:
           name: Run Tests
           command: |
