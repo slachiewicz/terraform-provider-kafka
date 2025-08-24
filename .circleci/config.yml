@@ -50,4 +50,5 @@ workflows:
   build-and-test:
     jobs:
       - build
+      - setup-kafka
       - test
