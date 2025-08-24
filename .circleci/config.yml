@@ -17,7 +17,6 @@ jobs:
           TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
-      - setup_remote_docker
       - run: make test
       - run: go install github.com/jstemmer/go-junit-report/v2@latest
       - run: mkdir -p $TEST_RESULTS
