@@ -1,20 +1,16 @@
 version: 2.1
 jobs:
   build:
-    working_directory: $HOME/go/src/github.com/Mongey/terraform-provider-kafka
     docker:
       - image: cimg/go:1.24
-        environment:
-          TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
       - run: go build .
       - store_artifacts:
-          path: $HOME/go/src/github.com/Mongey/terraform-provider-kafka/terraform-provider-kafka
+          path: terraform-provider-kafka
           destination: terraform-provider-kafka
 
   test:
-    working_directory: $HOME/go/src/github.com/Mongey/terraform-provider-kafka
     docker:
       - image: cimg/go:1.24
         environment:
@@ -25,21 +21,10 @@ jobs:
       - run: make test
       - run: go install github.com/jstemmer/go-junit-report/v2@latest
       - run: mkdir -p $TEST_RESULTS
-      - run:
-          name: Setup env
-          command: |
-            pwd
-            ls -las ./secrets
-            docker compose up --detach
-            sleep 10
-            docker compose ps
-            docker logs terraform-provider-kafka-kafka1-1
-            docker logs terraform-provider-kafka-kafka2-1
-            docker logs terraform-provider-kafka-kafka3-1
+      - run: docker compose up --detach
       - run:
           name: Run Tests
           command: |
-            trap "docker compose ps" ERR
             trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
             make testacc | tee ${TEST_RESULTS}/go-test.out
       - store_test_results:
