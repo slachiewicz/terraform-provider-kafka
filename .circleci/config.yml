@@ -25,10 +25,11 @@ jobs:
       - run: make test
       - run: go install github.com/jstemmer/go-junit-report/v2@latest
       - run: mkdir -p $TEST_RESULTS
-      - run: docker compose up -d
+      - run: docker compose up --detach --wait && sleep 10 && docker compose ps
       - run:
           name: Run Tests
           command: |
+            trap "docker compose ps" ERR
             trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
             make testacc | tee ${TEST_RESULTS}/go-test.out
       - store_test_results:
