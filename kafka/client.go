@@ -44,11 +44,11 @@ type aclCreationQueue struct {
 }
 
 type Client struct {
-	client       sarama.Client
-	kafkaConfig  *sarama.Config
-	config       *Config
-	topics       map[string]void
-	topicsMutex  sync.RWMutex
+	client      sarama.Client
+	kafkaConfig *sarama.Config
+	config      *Config
+	topics      map[string]void
+	topicsMutex sync.RWMutex
 	aclCache
 	aclDeletionQueue
 	aclCreationQueue
