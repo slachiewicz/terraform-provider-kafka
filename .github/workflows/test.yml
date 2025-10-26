@@ -32,6 +32,10 @@ jobs:
 
   acctest:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        kafka-version: ['3.9.1', '4.1.0']
+      fail-fast: false
 
     steps:
       - name: Checkout
@@ -48,7 +52,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: Bring up kafka + zk
-        run: docker compose up -d --wait
-      - name: "Run tests"
+      - name: Bring up kafka cluster (Kafka ${{ matrix.kafka-version }})
+        run: docker compose -f docker-compose.yaml -f docker-compose.kafka-${{ matrix.kafka-version }}.yaml up -d --wait
+      - name: "Run tests (Kafka ${{ matrix.kafka-version }})"
         run: sleep 10 && make testacc

@@ -1,0 +1,8 @@
+# Docker Compose override file for Kafka 3.9.1
+services:
+  kafka1:
+    image: apache/kafka-native:3.9.1
+  kafka2:
+    image: apache/kafka-native:3.9.1
+  kafka3:
+    image: apache/kafka-native:3.9.1
