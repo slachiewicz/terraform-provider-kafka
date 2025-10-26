@@ -24,25 +24,14 @@ testacc:
 .PHONY: build test testacc
 
 # Docker compose helpers for different Kafka versions
-# These set version-specific configuration via environment variables
 docker-up:
 	KAFKA_VERSION=$(KAFKA_VERSION) docker compose up -d --wait
 
 docker-up-kafka3:
-	KAFKA_VERSION=3.9.1 \
-	KAFKA_LOG4J_ROOT_LOGLEVEL=INFO \
-	KAFKA_LOG4J_LOGGERS=kafka.server.ClientQuotaManager=WARN \
-	KAFKA_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer \
-	KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true \
-	docker compose up -d --wait
+	KAFKA_VERSION=3.9.1 docker compose up -d --wait
 
 docker-up-kafka4:
-	KAFKA_VERSION=4.1.0 \
-	KAFKA_LOG4J_ROOT_LOGLEVEL=INFO \
-	KAFKA_LOG4J_LOGGERS=kafka.server.ClientQuotaManager=WARN \
-	KAFKA_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer \
-	KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true \
-	docker compose up -d --wait
+	KAFKA_VERSION=4.1.0 docker compose up -d --wait
 
 docker-down:
 	docker compose down -v

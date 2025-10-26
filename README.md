@@ -405,33 +405,31 @@ The provider integration test suite supports multiple Kafka versions through Doc
 
 ### Running Tests with Different Kafka Versions
 
-The docker-compose configuration uses **YAML anchors** to reduce duplication and support version-specific environment variables. To run tests with a specific Kafka version, use one of the following methods:
+The docker-compose configuration uses **YAML anchors** to reduce duplication. To run tests with a specific Kafka version, use one of the following methods:
 
 1. **Using make targets (recommended):**
    ```bash
-   make docker-up-kafka3   # Start Kafka 3 cluster with appropriate config
+   make docker-up-kafka3   # Start Kafka 3.9.1 cluster
    make testacc            # Run acceptance tests
    make docker-down        # Stop the cluster
    
    # Or for Kafka 4
-   make docker-up-kafka4   # Start Kafka 4 cluster with appropriate config
+   make docker-up-kafka4   # Start Kafka 4.1.0 cluster
    make testacc
    make docker-down
    ```
 
-2. **Using environment variables for custom configuration:**
+2. **Using environment variable:**
    ```bash
    # Kafka 3
-   KAFKA_VERSION=3.9.1 \
-   KAFKA_LOG4J_ROOT_LOGLEVEL=INFO \
-   KAFKA_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer \
-   docker compose up -d --wait
+   KAFKA_VERSION=3.9.1 docker compose up -d --wait
+   make testacc
+   docker compose down -v
    
    # Kafka 4  
-   KAFKA_VERSION=4.1.0 \
-   KAFKA_LOG4J_ROOT_LOGLEVEL=INFO \
-   KAFKA_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer \
-   docker compose up -d --wait
+   KAFKA_VERSION=4.1.0 docker compose up -d --wait
+   make testacc
+   docker compose down -v
    ```
 
 ### Configuration Architecture
@@ -441,14 +439,7 @@ The docker-compose setup uses **YAML anchors and fragments** (similar to [Sarama
 - Define shared configuration once using `x-kafka-base` and `kafka-base-env` anchors
 - Allow easy maintenance and updates across all brokers
 
-Environment variable substitution enables version-specific configurations:
-- `KAFKA_VERSION` - Kafka version to run (default: 3.9.1)
-- `KAFKA_LOG4J_ROOT_LOGLEVEL` - Logging level (default: INFO)
-- `KAFKA_LOG4J_LOGGERS` - Logger configurations (default: kafka.server.ClientQuotaManager=WARN)
-- `KAFKA_AUTHORIZER_CLASS_NAME` - Authorizer class (default: org.apache.kafka.metadata.authorizer.StandardAuthorizer)
-- `KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND` - ACL default (default: true)
-
-The specific versions and their configurations are defined in the Makefile and can be updated as new versions are released or configuration needs change.
+The only environment variable that needs to be set is `KAFKA_VERSION` to select between Kafka 3.9.1 and 4.1.0. All other configuration settings (logging, authorization, SSL, etc.) are fixed and identical for both versions.
 
 ## Documentation
 

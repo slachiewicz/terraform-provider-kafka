@@ -35,17 +35,6 @@ jobs:
     strategy:
       matrix:
         kafka-version: ['3.9.1', '4.1.0']
-        include:
-          - kafka-version: '3.9.1'
-            kafka-name: 'Kafka 3'
-            log4j-loglevel: 'INFO'
-            log4j-loggers: 'kafka.server.ClientQuotaManager=WARN'
-            authorizer: 'org.apache.kafka.metadata.authorizer.StandardAuthorizer'
-          - kafka-version: '4.1.0'
-            kafka-name: 'Kafka 4'
-            log4j-loglevel: 'INFO'
-            log4j-loggers: 'kafka.server.ClientQuotaManager=WARN'
-            authorizer: 'org.apache.kafka.metadata.authorizer.StandardAuthorizer'
       fail-fast: false
 
     steps:
@@ -63,13 +52,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: Bring up kafka cluster (${{ matrix.kafka-name }})
-        run: |
-          KAFKA_VERSION=${{ matrix.kafka-version }} \
-          KAFKA_LOG4J_ROOT_LOGLEVEL=${{ matrix.log4j-loglevel }} \
-          KAFKA_LOG4J_LOGGERS="${{ matrix.log4j-loggers }}" \
-          KAFKA_AUTHORIZER_CLASS_NAME=${{ matrix.authorizer }} \
-          KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true \
-          docker compose up -d --wait
-      - name: "Run tests (${{ matrix.kafka-name }})"
+      - name: Bring up kafka cluster (${{ matrix.kafka-version }})
+        run: KAFKA_VERSION=${{ matrix.kafka-version }} docker compose up -d --wait
+      - name: "Run tests (${{ matrix.kafka-version }})"
         run: sleep 10 && make testacc
