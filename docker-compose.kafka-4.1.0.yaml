@@ -1,8 +1,0 @@
-# Docker Compose override file for Kafka 4.1.0
-services:
-  kafka1:
-    image: apache/kafka-native:4.1.0
-  kafka2:
-    image: apache/kafka-native:4.1.0
-  kafka3:
-    image: apache/kafka-native:4.1.0

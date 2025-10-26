@@ -53,9 +53,8 @@ your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.
 0. Build the provider `make build`
 0. Run the tests `make test`
 0. Start a TLS enabled kafka-cluster `docker compose up` (defaults to Kafka 3.9.1)
-   - For Kafka 3.9.1: `make docker-up-3.9.1` or `docker compose -f docker-compose.yaml -f docker-compose.kafka-3.9.1.yaml up -d --wait`
-   - For Kafka 4.1.0: `make docker-up-4.1.0` or `docker compose -f docker-compose.yaml -f docker-compose.kafka-4.1.0.yaml up -d --wait`
-   - Using environment variable: `KAFKA_VERSION=3.9.1 docker compose up -d --wait`
+   - For Kafka 3: `make docker-up-kafka3` or `KAFKA_VERSION=3.9.1 docker compose up -d --wait`
+   - For Kafka 4: `make docker-up-kafka4` or `KAFKA_VERSION=4.1.0 docker compose up -d --wait`
 0. Run the acceptance tests `make testacc`
 0. Stop the kafka cluster `make docker-down` or `docker compose down -v`
 
@@ -399,10 +398,10 @@ For detailed troubleshooting, see our [Troubleshooting Guide](docs/guides/troubl
 
 ## Testing
 
-The provider integration test suite supports multiple Kafka versions through Docker Compose. The following versions are currently tested in CI:
+The provider integration test suite supports multiple Kafka versions through Docker Compose. The test suite is validated against:
 
-- Kafka 3.9.1
-- Kafka 4.1.0
+- **Kafka 3** (specifically 3.9.1)
+- **Kafka 4** (specifically 4.1.0)
 
 ### Running Tests with Different Kafka Versions
 
@@ -410,29 +409,29 @@ To run tests with a specific Kafka version, use one of the following methods:
 
 1. **Using make targets:**
    ```bash
-   make docker-up-3.9.1    # Start Kafka 3.9.1 cluster
+   make docker-up-kafka3   # Start Kafka 3 cluster
    make testacc            # Run acceptance tests
    make docker-down        # Stop the cluster
    
-   # Or for Kafka 4.1.0
-   make docker-up-4.1.0
+   # Or for Kafka 4
+   make docker-up-kafka4
    make testacc
    make docker-down
    ```
 
-2. **Using docker compose directly:**
-   ```bash
-   docker compose -f docker-compose.yaml -f docker-compose.kafka-3.9.1.yaml up -d --wait
-   make testacc
-   docker compose down -v
-   ```
-
-3. **Using environment variable:**
+2. **Using environment variable:**
    ```bash
    KAFKA_VERSION=3.9.1 docker compose up -d --wait
    make testacc
    docker compose down -v
+   
+   # Or for Kafka 4
+   KAFKA_VERSION=4.1.0 docker compose up -d --wait
+   make testacc
+   docker compose down -v
    ```
+
+The specific versions (3.9.1 and 4.1.0) are defined in the Makefile and can be updated as new versions are released.
 
 ## Documentation
 
