@@ -303,20 +303,9 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 	}
 
 	if diff.HasChange("replication_factor") {
-		log.Printf("[INFO] Checking the diff!")
-		client := v.(*LazyClient)
-
-		canAlterRF, err := client.CanAlterReplicationFactor()
-		if err != nil {
-			return err
-		}
-
-		if !canAlterRF {
-			log.Println("[INFO] Need Kafka >= 2.4.0 to update replication_factor in-place")
-			if err := diff.ForceNew("replication_factor"); err != nil {
-				return err
-			}
-		}
+		log.Printf("[INFO] Replication factor has changed, will attempt to update in-place")
+		// The operation will fail with an appropriate error if the broker doesn't support it
+		// (Kafka < 2.4.0). Sarama's ApiVersionsRequest will handle version negotiation.
 	}
 
 	return nil

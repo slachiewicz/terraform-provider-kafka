@@ -153,7 +153,6 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	}
 
 	r := &sarama.AlterConfigsRequest{
-		Version:      2, // Version 2 is supported in Kafka 3.x
 		Resources:    configToResources(topic, c.config),
 		ValidateOnly: false,
 	}
@@ -218,7 +217,6 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	req := &sarama.CreatePartitionsRequest{
-		Version:         2, // Version 2 is supported in Kafka 3.x
 		TopicPartitions: tp,
 		Timeout:         timeout,
 		ValidateOnly:    false,
@@ -236,21 +234,6 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	return err
-}
-
-func (c *Client) CanAlterReplicationFactor() bool {
-	// AlterPartitionReassignments requires Kafka 2.4.0 or higher
-	// With Sarama 1.46+, version negotiation is automatic, so we just check
-	// if we can create a ClusterAdmin (which is required for the operation)
-	admin, err := sarama.NewClusterAdminFromClient(c.client)
-	if err != nil {
-		return false
-	}
-	defer admin.Close()
-
-	// The feature is available if we can create the admin client
-	// Sarama will handle API version negotiation internally
-	return true
 }
 
 func (c *Client) AlterReplicationFactor(t Topic) error {
@@ -465,7 +448,6 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
-		Version: 3, // Version 3 is supported in Kafka 3.x and includes all modern features
 		Resources: []*sarama.ConfigResource{
 			{
 				Type: sarama.TopicResource,
