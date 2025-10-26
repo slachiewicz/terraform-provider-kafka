@@ -8,8 +8,9 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_NODE_ID: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
-      KAFKA_LOG4J_LOGGERS: kafka.server.ClientQuotaManager=WARN
+      # Logging configuration - can be overridden for different Kafka versions
+      KAFKA_LOG4J_ROOT_LOGLEVEL: ${KAFKA_LOG4J_ROOT_LOGLEVEL:-INFO}
+      KAFKA_LOG4J_LOGGERS: ${KAFKA_LOG4J_LOGGERS:-kafka.server.ClientQuotaManager=WARN}
 
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka1:9093"
 
@@ -29,8 +30,9 @@ services:
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
       KAFKA_LISTENER_NAME_INTERNAL_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
 
-      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-      KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorizer
+      # Authorization configuration - can be overridden for different Kafka versions
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: ${KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND:-true}
+      KAFKA_AUTHORIZER_CLASS_NAME: ${KAFKA_AUTHORIZER_CLASS_NAME:-org.apache.kafka.metadata.authorizer.StandardAuthorizer}
 
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -46,8 +48,9 @@ services:
       KAFKA_BROKER_ID: 2
       KAFKA_NODE_ID: 2
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
-      KAFKA_LOG4J_LOGGERS: kafka.server.ClientQuotaManager=WARN
+      # Logging configuration - can be overridden for different Kafka versions
+      KAFKA_LOG4J_ROOT_LOGLEVEL: ${KAFKA_LOG4J_ROOT_LOGLEVEL:-INFO}
+      KAFKA_LOG4J_LOGGERS: ${KAFKA_LOG4J_LOGGERS:-kafka.server.ClientQuotaManager=WARN}
 
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka1:9093"
 
@@ -67,8 +70,9 @@ services:
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
       KAFKA_LISTENER_NAME_INTERNAL_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
 
-      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-      KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorizer
+      # Authorization configuration - can be overridden for different Kafka versions
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: ${KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND:-true}
+      KAFKA_AUTHORIZER_CLASS_NAME: ${KAFKA_AUTHORIZER_CLASS_NAME:-org.apache.kafka.metadata.authorizer.StandardAuthorizer}
 
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -84,8 +88,9 @@ services:
       KAFKA_BROKER_ID: 3
       KAFKA_NODE_ID: 3
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
-      KAFKA_LOG4J_LOGGERS: kafka.server.ClientQuotaManager=WARN
+      # Logging configuration - can be overridden for different Kafka versions
+      KAFKA_LOG4J_ROOT_LOGLEVEL: ${KAFKA_LOG4J_ROOT_LOGLEVEL:-INFO}
+      KAFKA_LOG4J_LOGGERS: ${KAFKA_LOG4J_LOGGERS:-kafka.server.ClientQuotaManager=WARN}
 
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka1:9093"
 
@@ -105,8 +110,9 @@ services:
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
 
       KAFKA_LISTENER_NAME_INTERNAL_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
-      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-      KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorizer
+      # Authorization configuration - can be overridden for different Kafka versions
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: ${KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND:-true}
+      KAFKA_AUTHORIZER_CLASS_NAME: ${KAFKA_AUTHORIZER_CLASS_NAME:-org.apache.kafka.metadata.authorizer.StandardAuthorizer}
 
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
