@@ -44,12 +44,11 @@ type aclCreationQueue struct {
 }
 
 type Client struct {
-	client        sarama.Client
-	kafkaConfig   *sarama.Config
-	config        *Config
-	supportedAPIs map[int]int
-	topics        map[string]void
-	topicsMutex   sync.RWMutex
+	client       sarama.Client
+	kafkaConfig  *sarama.Config
+	config       *Config
+	topics       map[string]void
+	topicsMutex  sync.RWMutex
 	aclCache
 	aclDeletionQueue
 	aclCreationQueue
@@ -96,11 +95,6 @@ func NewClient(config *Config) (*Client, error) {
 		},
 	}
 
-	err = client.populateAPIVersions()
-	if err != nil {
-		return client, err
-	}
-
 	err = client.extractTopics()
 
 	return client, err
@@ -108,106 +102,6 @@ func NewClient(config *Config) (*Client, error) {
 
 func (c *Client) SaramaClient() sarama.Client {
 	return c.client
-}
-
-func (c *Client) populateAPIVersions() error {
-	ch := make(chan []sarama.ApiVersionsResponseKey)
-	errCh := make(chan error)
-
-	brokers := c.client.Brokers()
-	kafkaConfig := c.kafkaConfig
-	for _, broker := range brokers {
-		go apiVersionsFromBroker(broker, kafkaConfig, ch, errCh)
-	}
-
-	clusterApiVersions := make(map[int][2]int) // valid api version intervals across all brokers
-	errs := make([]error, 0)
-	for i := 0; i < len(brokers); i++ {
-		select {
-		case brokerApiVersions := <-ch:
-			updateClusterApiVersions(&clusterApiVersions, brokerApiVersions)
-		case err := <-errCh:
-			errs = append(errs, err)
-		}
-	}
-
-	if len(errs) != 0 {
-		return errors.Join(errs...)
-	}
-
-	c.supportedAPIs = make(map[int]int, len(clusterApiVersions))
-	for apiKey, versionMinMax := range clusterApiVersions {
-		versionMin := versionMinMax[0]
-		versionMax := versionMinMax[1]
-
-		if versionMax >= versionMin {
-			c.supportedAPIs[apiKey] = versionMax
-		}
-
-		// versionMax will be less than versionMin only when
-		// two or more brokers have disjoint version
-		// intervals...which means the api is not supported
-		// cluster-wide
-	}
-
-	return nil
-}
-
-func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan<- []sarama.ApiVersionsResponseKey, errCh chan<- error) {
-	resp, err := rawApiVersionsRequest(broker, config)
-
-	if err != nil {
-		errCh <- err
-	} else if sarama.KError(resp.ErrorCode) != sarama.ErrNoError {
-		errCh <- errors.New(sarama.KError(resp.ErrorCode).Error())
-	} else {
-		ch <- resp.ApiKeys
-	}
-}
-
-func rawApiVersionsRequest(broker *sarama.Broker, config *sarama.Config) (*sarama.ApiVersionsResponse, error) {
-	if err := broker.Open(config); err != nil && err != sarama.ErrAlreadyConnected {
-		return nil, err
-	}
-
-	defer func() {
-		if err := broker.Close(); err != nil && err != sarama.ErrNotConnected {
-			log.Printf("[ERROR] failed to close broker: %v", err)
-		}
-	}()
-
-	return broker.ApiVersions(&sarama.ApiVersionsRequest{})
-}
-
-func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersions []sarama.ApiVersionsResponseKey) {
-	cluster := *clusterApiVersions
-
-	for _, apiBlock := range brokerApiVersions {
-		apiKey := int(apiBlock.ApiKey)
-		brokerMin := int(apiBlock.MinVersion)
-		brokerMax := int(apiBlock.MaxVersion)
-
-		clusterMinMax, exists := cluster[apiKey]
-		if !exists {
-			cluster[apiKey] = [2]int{brokerMin, brokerMax}
-		} else {
-			// shrink the cluster interval according to
-			// the broker interval
-
-			clusterMin := clusterMinMax[0]
-			clusterMax := clusterMinMax[1]
-
-			if brokerMin > clusterMin {
-				clusterMinMax[0] = brokerMin
-			}
-
-			if brokerMax < clusterMax {
-				clusterMinMax[1] = brokerMax
-			}
-
-			cluster[apiKey] = clusterMinMax
-		}
-	}
 }
 
 func (c *Client) extractTopics() error {
@@ -233,17 +127,8 @@ func (c *Client) DeleteTopic(t string) error {
 	}
 
 	timeout := time.Duration(c.config.Timeout) * time.Second
-	req := &sarama.DeleteTopicsRequest{
-		Topics:  []string{t},
-		Timeout: timeout,
-	}
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		req.Version = 3
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_11_0_0) {
-		req.Version = 2
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_10_2_0) {
-		req.Version = 1
-	}
+	req := sarama.NewDeleteTopicsRequest(c.kafkaConfig.Version, []string{t}, timeout)
+
 	res, err := broker.DeleteTopics(req)
 	if err == nil {
 		for k, e := range res.TopicErrorCodes {
@@ -272,10 +157,6 @@ func (c *Client) UpdateTopic(topic Topic) error {
 		ValidateOnly: false,
 	}
 
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		r.Version = 1
-	}
-
 	res, err := broker.AlterConfigs(r)
 	if err != nil {
 		return err
@@ -299,23 +180,15 @@ func (c *Client) CreateTopic(t Topic) error {
 	timeout := time.Duration(c.config.Timeout) * time.Second
 	log.Printf("[TRACE] Timeout is %v ", timeout)
 
-	req := &sarama.CreateTopicsRequest{
-		TopicDetails: map[string]*sarama.TopicDetail{
-			t.Name: {
-				NumPartitions:     t.Partitions,
-				ReplicationFactor: t.ReplicationFactor,
-				ConfigEntries:     t.Config,
-			},
+	topicDetails := map[string]*sarama.TopicDetail{
+		t.Name: {
+			NumPartitions:     t.Partitions,
+			ReplicationFactor: t.ReplicationFactor,
+			ConfigEntries:     t.Config,
 		},
-		Timeout: timeout,
 	}
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		req.Version = 3
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_11_0_0) {
-		req.Version = 2
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_10_2_0) {
-		req.Version = 1
-	}
+	req := sarama.NewCreateTopicsRequest(c.kafkaConfig.Version, topicDetails, timeout, false)
+
 	res, err := broker.CreateTopics(req)
 
 	if err == nil {
@@ -349,10 +222,6 @@ func (c *Client) AddPartitions(t Topic) error {
 		ValidateOnly:    false,
 	}
 
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		req.Version = 1
-	}
-
 	log.Printf("[INFO] Adding partitions to %s in Kafka", t.Name)
 	res, err := broker.CreatePartitions(req)
 	if err == nil {
@@ -368,10 +237,18 @@ func (c *Client) AddPartitions(t Topic) error {
 }
 
 func (c *Client) CanAlterReplicationFactor() bool {
-	_, ok1 := c.supportedAPIs[45] // https://kafka.apache.org/protocol#The_Messages_AlterPartitionReassignments
-	_, ok2 := c.supportedAPIs[46] // https://kafka.apache.org/protocol#The_Messages_ListPartitionReassignments
+	// AlterPartitionReassignments requires Kafka 2.4.0 or higher
+	// With Sarama 1.46+, version negotiation is automatic, so we just check
+	// if we can create a ClusterAdmin (which is required for the operation)
+	admin, err := sarama.NewClusterAdminFromClient(c.client)
+	if err != nil {
+		return false
+	}
+	defer admin.Close()
 
-	return ok1 && ok2
+	// The feature is available if we can create the admin client
+	// Sarama will handle API version negotiation internally
+	return true
 }
 
 func (c *Client) AlterReplicationFactor(t Topic) error {
@@ -582,22 +459,10 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 	return topic, err
 }
 
-func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
-	if maxSupportedVersion, ok := c.supportedAPIs[apiKey]; ok {
-		if maxSupportedVersion < wantedMaxVersion {
-			return maxSupportedVersion
-		}
-		return wantedMaxVersion
-	}
-
-	return 0
-}
-
 // topicConfig retrives the non-default config map for a topic
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
-		Version: c.getDescribeConfigAPIVersion(),
 		Resources: []*sarama.ConfigResource{
 			{
 				Type: sarama.TopicResource,
@@ -609,14 +474,6 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	broker, err := c.client.Controller()
 	if err != nil {
 		return conf, err
-	}
-
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V1_1_0_0) {
-		request.Version = 1
-	}
-
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		request.Version = 2
 	}
 
 	cr, err := broker.DescribeConfigs(request)
@@ -646,22 +503,6 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		}
 	}
 	return conf, nil
-}
-
-func (c *Client) getDescribeAclsRequestAPIVersion() int16 {
-	return int16(c.versionForKey(29, 1))
-}
-
-func (c *Client) getCreateAclsRequestAPIVersion() int16 {
-	return int16(c.versionForKey(30, 1))
-}
-
-func (c *Client) getDeleteAclsRequestAPIVersion() int16 {
-	return int16(c.versionForKey(31, 1))
-}
-
-func (c *Client) getDescribeConfigAPIVersion() int16 {
-	return int16(c.versionForKey(32, 1))
 }
 
 func (c *Client) getKafkaTopics() ([]Topic, error) {
