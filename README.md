@@ -405,7 +405,7 @@ The provider integration test suite supports multiple Kafka versions through Doc
 
 ### Running Tests with Different Kafka Versions
 
-The docker-compose configuration supports version-specific environment variables to accommodate differences between Kafka versions. To run tests with a specific Kafka version, use one of the following methods:
+The docker-compose configuration uses **YAML anchors** to reduce duplication and support version-specific environment variables. To run tests with a specific Kafka version, use one of the following methods:
 
 1. **Using make targets (recommended):**
    ```bash
@@ -434,9 +434,14 @@ The docker-compose configuration supports version-specific environment variables
    docker compose up -d --wait
    ```
 
-### Configuration Flexibility
+### Configuration Architecture
 
-The docker-compose setup uses environment variable substitution to allow version-specific configurations:
+The docker-compose setup uses **YAML anchors and fragments** (similar to [Sarama](https://github.com/IBM/sarama)) to:
+- Reduce duplication across broker definitions (reduced from 121 to 77 lines - 36% reduction)
+- Define shared configuration once using `x-kafka-base` and `kafka-base-env` anchors
+- Allow easy maintenance and updates across all brokers
+
+Environment variable substitution enables version-specific configurations:
 - `KAFKA_VERSION` - Kafka version to run (default: 3.9.1)
 - `KAFKA_LOG4J_ROOT_LOGLEVEL` - Logging level (default: INFO)
 - `KAFKA_LOG4J_LOGGERS` - Logger configurations (default: kafka.server.ClientQuotaManager=WARN)
