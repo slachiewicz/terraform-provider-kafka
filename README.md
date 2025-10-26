@@ -441,6 +441,15 @@ The docker-compose setup uses **YAML anchors and fragments** (similar to [Sarama
 
 The only environment variable that needs to be set is `KAFKA_VERSION` to select between Kafka 3.9.1 and 4.1.0. All other configuration settings (logging, authorization, SSL, etc.) are fixed and identical for both versions.
 
+### CI/CD Protections
+
+The GitHub Actions workflow includes protections against flaky test failures:
+- **Test parallelism limiting**: `GOMAXPROCS=2` reduces concurrent test execution to minimize "text file busy" errors from terraform-plugin-sdk
+- **Automatic retry**: Tests automatically retry up to 3 times on failure to handle intermittent CI issues
+- Tests pass if any of the 3 attempts succeeds
+
+These protections help mitigate known terraform-plugin-sdk test harness issues in CI environments where multiple parallel tests can compete for the terraform binary.
+
 ## Documentation
 
 - [Quick Start Guide](docs/guides/quick-start.md) - Get started quickly with common scenarios
