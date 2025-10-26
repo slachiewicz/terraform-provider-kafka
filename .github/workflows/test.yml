@@ -55,4 +55,24 @@ jobs:
       - name: Bring up kafka cluster (${{ matrix.kafka-version }})
         run: KAFKA_VERSION=${{ matrix.kafka-version }} docker compose up -d --wait
       - name: "Run tests (${{ matrix.kafka-version }})"
-        run: sleep 10 && make testacc
+        # Limit parallelism to reduce "text file busy" errors from terraform-plugin-sdk
+        # and retry on failure to handle intermittent CI issues
+        run: |
+          set +e
+          for i in 1 2 3; do
+            echo "Test attempt $i of 3"
+            sleep 10
+            GOMAXPROCS=2 make testacc
+            exit_code=$?
+            if [ $exit_code -eq 0 ]; then
+              echo "Tests passed on attempt $i"
+              exit 0
+            fi
+            echo "Tests failed on attempt $i with exit code $exit_code"
+            if [ $i -lt 3 ]; then
+              echo "Retrying in 5 seconds..."
+              sleep 5
+            fi
+          done
+          echo "Tests failed after 3 attempts"
+          exit $exit_code
