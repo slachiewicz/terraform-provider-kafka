@@ -136,7 +136,6 @@ func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilte
 			c.aclDeletionQueue.waitChans = nil
 		}()
 		req := &sarama.DeleteAclsRequest{
-			Version: int(c.getDeleteAclsRequestAPIVersion()),
 			Filters: c.aclDeletionQueue.filters,
 		}
 
@@ -209,7 +208,6 @@ func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreat
 			c.aclCreationQueue.waitChans = nil
 		}()
 		req := &sarama.CreateAclsRequest{
-			Version:      c.getCreateAclsRequestAPIVersion(),
 			AclCreations: c.aclCreationQueue.creations,
 		}
 
@@ -457,8 +455,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	}
 
 	allResources := []*sarama.DescribeAclsRequest{
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTopic,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -466,8 +463,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceGroup,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -475,8 +471,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceCluster,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -484,8 +479,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTransactionalID,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -493,8 +487,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceDelegationToken,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
