@@ -44,11 +44,11 @@ type aclCreationQueue struct {
 }
 
 type Client struct {
-	client       sarama.Client
-	kafkaConfig  *sarama.Config
-	config       *Config
-	topics       map[string]void
-	topicsMutex  sync.RWMutex
+	client      sarama.Client
+	kafkaConfig *sarama.Config
+	config      *Config
+	topics      map[string]void
+	topicsMutex sync.RWMutex
 	aclCache
 	aclDeletionQueue
 	aclCreationQueue
@@ -128,7 +128,7 @@ func (c *Client) DeleteTopic(t string) error {
 
 	timeout := time.Duration(c.config.Timeout) * time.Second
 	req := sarama.NewDeleteTopicsRequest(c.kafkaConfig.Version, []string{t}, timeout)
-	
+
 	res, err := broker.DeleteTopics(req)
 	if err == nil {
 		for k, e := range res.TopicErrorCodes {
@@ -190,7 +190,7 @@ func (c *Client) CreateTopic(t Topic) error {
 		},
 	}
 	req := sarama.NewCreateTopicsRequest(c.kafkaConfig.Version, topicDetails, timeout, false)
-	
+
 	res, err := broker.CreateTopics(req)
 
 	if err == nil {
@@ -247,7 +247,7 @@ func (c *Client) CanAlterReplicationFactor() bool {
 		return false
 	}
 	defer admin.Close()
-	
+
 	// The feature is available if we can create the admin client
 	// Sarama will handle API version negotiation internally
 	return true
