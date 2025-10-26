@@ -35,6 +35,11 @@ jobs:
     strategy:
       matrix:
         kafka-version: ['3.9.1', '4.1.0']
+        include:
+          - kafka-version: '3.9.1'
+            kafka-name: 'Kafka 3'
+          - kafka-version: '4.1.0'
+            kafka-name: 'Kafka 4'
       fail-fast: false
 
     steps:
@@ -52,7 +57,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: Bring up kafka cluster (Kafka ${{ matrix.kafka-version }})
-        run: docker compose -f docker-compose.yaml -f docker-compose.kafka-${{ matrix.kafka-version }}.yaml up -d --wait
-      - name: "Run tests (Kafka ${{ matrix.kafka-version }})"
+      - name: Bring up kafka cluster (${{ matrix.kafka-name }})
+        run: KAFKA_VERSION=${{ matrix.kafka-version }} docker compose up -d --wait
+      - name: "Run tests (${{ matrix.kafka-name }})"
         run: sleep 10 && make testacc
