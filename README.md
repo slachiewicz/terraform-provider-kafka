@@ -52,8 +52,12 @@ your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.
     ```
 0. Build the provider `make build`
 0. Run the tests `make test`
-0. Start a TLS enabled kafka-cluster `docker-compose up`
+0. Start a TLS enabled kafka-cluster `docker compose up` (defaults to Kafka 3.9.1)
+   - For Kafka 3.9.1: `make docker-up-3.9.1` or `docker compose -f docker-compose.yaml -f docker-compose.kafka-3.9.1.yaml up -d --wait`
+   - For Kafka 4.1.0: `make docker-up-4.1.0` or `docker compose -f docker-compose.yaml -f docker-compose.kafka-4.1.0.yaml up -d --wait`
+   - Using environment variable: `KAFKA_VERSION=3.9.1 docker compose up -d --wait`
 0. Run the acceptance tests `make testacc`
+0. Stop the kafka cluster `make docker-down` or `docker compose down -v`
 
 ## Provider Configuration
 
@@ -392,6 +396,43 @@ The provider requires `bootstrap_servers` at initialization time. For dynamic en
 - Use `count` or `for_each` on resources instead of conditional provider configuration
 
 For detailed troubleshooting, see our [Troubleshooting Guide](docs/guides/troubleshooting.md).
+
+## Testing
+
+The provider integration test suite supports multiple Kafka versions through Docker Compose. The following versions are currently tested in CI:
+
+- Kafka 3.9.1
+- Kafka 4.1.0
+
+### Running Tests with Different Kafka Versions
+
+To run tests with a specific Kafka version, use one of the following methods:
+
+1. **Using make targets:**
+   ```bash
+   make docker-up-3.9.1    # Start Kafka 3.9.1 cluster
+   make testacc            # Run acceptance tests
+   make docker-down        # Stop the cluster
+   
+   # Or for Kafka 4.1.0
+   make docker-up-4.1.0
+   make testacc
+   make docker-down
+   ```
+
+2. **Using docker compose directly:**
+   ```bash
+   docker compose -f docker-compose.yaml -f docker-compose.kafka-3.9.1.yaml up -d --wait
+   make testacc
+   docker compose down -v
+   ```
+
+3. **Using environment variable:**
+   ```bash
+   KAFKA_VERSION=3.9.1 docker compose up -d --wait
+   make testacc
+   docker compose down -v
+   ```
 
 ## Documentation
 
