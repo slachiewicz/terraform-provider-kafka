@@ -153,7 +153,7 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	}
 
 	r := &sarama.AlterConfigsRequest{
-		Version:      1, // Version 1 is supported since Kafka 2.0.0
+		Version:      2, // Version 2 is supported in Kafka 3.x
 		Resources:    configToResources(topic, c.config),
 		ValidateOnly: false,
 	}
@@ -218,7 +218,7 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	req := &sarama.CreatePartitionsRequest{
-		Version:         1, // Version 1 is supported since Kafka 2.0.0
+		Version:         2, // Version 2 is supported in Kafka 3.x
 		TopicPartitions: tp,
 		Timeout:         timeout,
 		ValidateOnly:    false,
@@ -465,7 +465,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
-		Version: 2, // Version 2 is supported since Kafka 2.0.0 and includes synonym support
+		Version: 3, // Version 3 is supported in Kafka 3.x and includes all modern features
 		Resources: []*sarama.ConfigResource{
 			{
 				Type: sarama.TopicResource,
