@@ -153,14 +153,9 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	}
 
 	r := &sarama.AlterConfigsRequest{
+		Version:      2, // Highest version for Kafka 3+
 		Resources:    configToResources(topic, c.config),
 		ValidateOnly: false,
-	}
-	// Set version based on Kafka version, similar to how NewDeleteTopicsRequest works
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_3_0_0) {
-		r.Version = 2
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		r.Version = 1
 	}
 
 	res, err := broker.AlterConfigs(r)
@@ -223,17 +218,10 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	req := &sarama.CreatePartitionsRequest{
+		Version:         3, // Highest version for Kafka 3+
 		TopicPartitions: tp,
 		Timeout:         timeout,
 		ValidateOnly:    false,
-	}
-	// Set version based on Kafka version
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V3_7_0_0) {
-		req.Version = 3
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		req.Version = 2
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V1_0_0_0) {
-		req.Version = 1
 	}
 
 	log.Printf("[INFO] Adding partitions to %s in Kafka", t.Name)
@@ -469,16 +457,7 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 			},
 		},
 	}
-	// Set version based on Kafka version
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V3_7_0_0) {
-		request.Version = 4
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_6_0_0) {
-		request.Version = 3
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		request.Version = 2
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_11_0_0) {
-		request.Version = 1
-	}
+	request.Version = 4 // Highest version for Kafka 3+
 
 	broker, err := c.client.Controller()
 	if err != nil {

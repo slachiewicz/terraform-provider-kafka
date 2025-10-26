@@ -137,15 +137,8 @@ func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilte
 			c.aclDeletionQueue.waitChans = nil
 		}()
 		req := &sarama.DeleteAclsRequest{
+			Version: 3, // Highest version for Kafka 3+
 			Filters: c.aclDeletionQueue.filters,
-		}
-		// Set version based on Kafka version
-		if c.kafkaConfig.Version.IsAtLeast(sarama.V3_7_0_0) {
-			req.Version = 3
-		} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_1_0_0) {
-			req.Version = 2
-		} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-			req.Version = 1
 		}
 
 		res, err := broker.DeleteAcls(req)
@@ -218,15 +211,8 @@ func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreat
 			c.aclCreationQueue.waitChans = nil
 		}()
 		req := &sarama.CreateAclsRequest{
+			Version:      3, // Highest version for Kafka 3+
 			AclCreations: c.aclCreationQueue.creations,
-		}
-		// Set version based on Kafka version
-		if c.kafkaConfig.Version.IsAtLeast(sarama.V3_7_0_0) {
-			req.Version = 3
-		} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_1_0_0) {
-			req.Version = 2
-		} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-			req.Version = 1
 		}
 
 		res, err := broker.CreateAcls(req)
@@ -523,17 +509,9 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 		},
 	}
 	
-	// Set version for all DescribeAcls requests based on Kafka version
-	aclVersion := 0
-	if c.kafkaConfig.Version.IsAtLeast(sarama.V3_7_0_0) {
-		aclVersion = 3
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_1_0_0) {
-		aclVersion = 2
-	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
-		aclVersion = 1
-	}
+	// Set version for all DescribeAcls requests - use highest version for Kafka 3+
 	for _, req := range allResources {
-		req.Version = aclVersion
+		req.Version = 3
 	}
 	res := []*sarama.ResourceAcls{}
 
