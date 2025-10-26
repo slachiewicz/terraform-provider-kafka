@@ -137,6 +137,7 @@ func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilte
 			c.aclDeletionQueue.waitChans = nil
 		}()
 		req := &sarama.DeleteAclsRequest{
+			Version: 1, // Version 1 is supported since Kafka 2.0.0
 			Filters: c.aclDeletionQueue.filters,
 		}
 
@@ -210,6 +211,7 @@ func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreat
 			c.aclCreationQueue.waitChans = nil
 		}()
 		req := &sarama.CreateAclsRequest{
+			Version:      1, // Version 1 is supported since Kafka 2.0.0
 			AclCreations: c.aclCreationQueue.creations,
 		}
 
@@ -466,6 +468,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 
 	allResources := []*sarama.DescribeAclsRequest{
 		{
+			Version: 1, // Version 1 is supported since Kafka 2.0.0
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTopic,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -474,6 +477,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		{
+			Version: 1, // Version 1 is supported since Kafka 2.0.0
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceGroup,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -482,6 +486,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		{
+			Version: 1, // Version 1 is supported since Kafka 2.0.0
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceCluster,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -490,6 +495,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		{
+			Version: 1, // Version 1 is supported since Kafka 2.0.0
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTransactionalID,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -498,6 +504,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		{
+			Version: 1, // Version 1 is supported since Kafka 2.0.0
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceDelegationToken,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
