@@ -136,7 +136,7 @@ func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilte
 			c.aclDeletionQueue.waitChans = nil
 		}()
 		req := &sarama.DeleteAclsRequest{
-			Version: int(c.getDeleteAclsRequestAPIVersion()),
+			Version: 3, // Highest version for Kafka 3+
 			Filters: c.aclDeletionQueue.filters,
 		}
 
@@ -209,7 +209,7 @@ func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreat
 			c.aclCreationQueue.waitChans = nil
 		}()
 		req := &sarama.CreateAclsRequest{
-			Version:      c.getCreateAclsRequestAPIVersion(),
+			Version:      3, // Highest version for Kafka 3+
 			AclCreations: c.aclCreationQueue.creations,
 		}
 
@@ -457,8 +457,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	}
 
 	allResources := []*sarama.DescribeAclsRequest{
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTopic,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -466,8 +465,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceGroup,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -475,8 +473,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceCluster,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -484,8 +481,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTransactionalID,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -493,8 +489,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
+		{
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceDelegationToken,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -502,6 +497,11 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
+	}
+	
+	// Set version for all DescribeAcls requests - use highest version for Kafka 3+
+	for _, req := range allResources {
+		req.Version = 3
 	}
 	res := []*sarama.ResourceAcls{}
 
