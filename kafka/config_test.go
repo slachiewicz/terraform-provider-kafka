@@ -160,6 +160,106 @@ func TestConfig_NewKafkaConfig_WithOauthBearerMechanism(t *testing.T) {
 	assertEquals(t, sarama.SASLMechanism(sarama.SASLTypeOAuth), sConfig.Net.SASL.Mechanism)
 }
 
+func TestConfig_NewKafkaConfig_WithGSSAPIMechanism_KeytabAuth(t *testing.T) {
+	username := "testuser@EXAMPLE.COM"
+	keytabPath := "/path/to/keytab"
+	kerberosConfigPath := "/etc/krb5.conf"
+	serviceName := "kafka"
+	realm := "EXAMPLE.COM"
+	mechanism := "gssapi"
+	
+	config := Config{
+		SASLMechanism:            mechanism,
+		GSSAPIAuthType:           "KRB5_KEYTAB_AUTH",
+		GSSAPIUsername:           username,
+		GSSAPIKeytabPath:         keytabPath,
+		GSSAPIKerberosConfigPath: kerberosConfigPath,
+		GSSAPIServiceName:        serviceName,
+		GSSAPIRealm:              realm,
+		GSSAPIDisablePAFXFAST:    false,
+	}
+
+	sConfig, err := config.newKafkaConfig()
+
+	assertNil(t, err)
+	assertEquals(t, sarama.SASLMechanism(sarama.SASLTypeGSSAPI), sConfig.Net.SASL.Mechanism)
+	assertEquals(t, true, sConfig.Net.SASL.Enable)
+	assertEquals(t, true, sConfig.Net.SASL.Handshake)
+	assertEquals(t, 2, sConfig.Net.SASL.GSSAPI.AuthType) // KRB5_KEYTAB_AUTH
+	assertEquals(t, username, sConfig.Net.SASL.GSSAPI.Username)
+	assertEquals(t, keytabPath, sConfig.Net.SASL.GSSAPI.KeyTabPath)
+	assertEquals(t, kerberosConfigPath, sConfig.Net.SASL.GSSAPI.KerberosConfigPath)
+	assertEquals(t, serviceName, sConfig.Net.SASL.GSSAPI.ServiceName)
+	assertEquals(t, realm, sConfig.Net.SASL.GSSAPI.Realm)
+	assertEquals(t, false, sConfig.Net.SASL.GSSAPI.DisablePAFXFAST)
+}
+
+func TestConfig_NewKafkaConfig_WithGSSAPIMechanism_UserAuth(t *testing.T) {
+	username := "testuser@EXAMPLE.COM"
+	password := "testpassword"
+	kerberosConfigPath := "/etc/krb5.conf"
+	serviceName := "kafka"
+	realm := "EXAMPLE.COM"
+	mechanism := "gssapi"
+	
+	config := Config{
+		SASLMechanism:            mechanism,
+		GSSAPIAuthType:           "KRB5_USER_AUTH",
+		GSSAPIUsername:           username,
+		GSSAPIPassword:           password,
+		GSSAPIKerberosConfigPath: kerberosConfigPath,
+		GSSAPIServiceName:        serviceName,
+		GSSAPIRealm:              realm,
+		GSSAPIDisablePAFXFAST:    true,
+	}
+
+	sConfig, err := config.newKafkaConfig()
+
+	assertNil(t, err)
+	assertEquals(t, sarama.SASLMechanism(sarama.SASLTypeGSSAPI), sConfig.Net.SASL.Mechanism)
+	assertEquals(t, true, sConfig.Net.SASL.Enable)
+	assertEquals(t, true, sConfig.Net.SASL.Handshake)
+	assertEquals(t, 1, sConfig.Net.SASL.GSSAPI.AuthType) // KRB5_USER_AUTH
+	assertEquals(t, username, sConfig.Net.SASL.GSSAPI.Username)
+	assertEquals(t, password, sConfig.Net.SASL.GSSAPI.Password)
+	assertEquals(t, kerberosConfigPath, sConfig.Net.SASL.GSSAPI.KerberosConfigPath)
+	assertEquals(t, serviceName, sConfig.Net.SASL.GSSAPI.ServiceName)
+	assertEquals(t, realm, sConfig.Net.SASL.GSSAPI.Realm)
+	assertEquals(t, true, sConfig.Net.SASL.GSSAPI.DisablePAFXFAST)
+}
+
+func TestConfig_NewKafkaConfig_WithGSSAPIMechanism_DefaultServiceName(t *testing.T) {
+	username := "testuser@EXAMPLE.COM"
+	keytabPath := "/path/to/keytab"
+	kerberosConfigPath := "/etc/krb5.conf"
+	mechanism := "gssapi"
+	
+	config := Config{
+		SASLMechanism:            mechanism,
+		GSSAPIAuthType:           "2",
+		GSSAPIUsername:           username,
+		GSSAPIKeytabPath:         keytabPath,
+		GSSAPIKerberosConfigPath: kerberosConfigPath,
+		// GSSAPIServiceName not set - should default to "kafka"
+	}
+
+	sConfig, err := config.newKafkaConfig()
+
+	assertNil(t, err)
+	assertEquals(t, "kafka", sConfig.Net.SASL.GSSAPI.ServiceName)
+}
+
+func TestConfig_SASLEnabled_WithGSSAPI(t *testing.T) {
+	config := Config{
+		SASLMechanism: "gssapi",
+	}
+
+	result := config.saslEnabled()
+
+	assertEquals(t, true, result)
+}
+
+
 func loadFile(t *testing.T, file string) string {
 	fb, err := os.ReadFile(file)
 	if err != nil {
