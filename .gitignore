@@ -1,5 +1,7 @@
-!/examples/main.tf
 /examples/*
+!/examples/main.tf
+!/examples/gssapi-keytab.tf
+!/examples/gssapi-user-auth.tf
 terraform-provider-kafka*
 dist
 .vscode/
