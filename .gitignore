@@ -2,6 +2,7 @@
 !/examples/main.tf
 !/examples/gssapi-keytab.tf
 !/examples/gssapi-user-auth.tf
+!/examples/gssapi-docker.tf
 terraform-provider-kafka*
 dist
 .vscode/
