@@ -1,0 +1,5 @@
+# Ignore generated keytab files
+*.keytab
+
+# Keep configuration files
+!.gitignore

@@ -48,6 +48,14 @@ type Config struct {
 	SASLTokenUrl                           string
 	SASLAWSSharedConfigFiles               *[]string
 	SASLOAuthScopes                        []string
+	GSSAPIAuthType                         string
+	GSSAPIKeytabPath                       string
+	GSSAPIKerberosConfigPath               string
+	GSSAPIServiceName                      string
+	GSSAPIUsername                         string
+	GSSAPIPassword                         string
+	GSSAPIRealm                            string
+	GSSAPIDisablePAFXFAST                  bool
 }
 
 type OAuth2Config interface {
@@ -187,9 +195,47 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 				Scopes:       c.SASLOAuthScopes,
 			}
 			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(&oauth2Config)
+		case "gssapi":
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeGSSAPI)
+			
+			// Set default service name if not provided
+			if c.GSSAPIServiceName == "" {
+				c.GSSAPIServiceName = "kafka"
+			}
+			kafkaConfig.Net.SASL.GSSAPI.ServiceName = c.GSSAPIServiceName
+			
+			// Determine auth type - default to keytab auth
+			authType := 2 // KRB5_KEYTAB_AUTH
+			if c.GSSAPIAuthType != "" {
+				switch c.GSSAPIAuthType {
+				case "KRB5_USER_AUTH", "1":
+					authType = 1
+				case "KRB5_KEYTAB_AUTH", "2":
+					authType = 2
+				case "KRB5_CCACHE_AUTH", "3":
+					authType = 3
+				default:
+					log.Fatalf("[ERROR] Invalid GSSAPI auth type \"%s\": can only be \"KRB5_USER_AUTH\" (1), \"KRB5_KEYTAB_AUTH\" (2), or \"KRB5_CCACHE_AUTH\" (3)", c.GSSAPIAuthType)
+				}
+			}
+			kafkaConfig.Net.SASL.GSSAPI.AuthType = authType
+			
+			// Set configuration based on auth type
+			if authType == 1 {
+				// KRB5_USER_AUTH
+				kafkaConfig.Net.SASL.GSSAPI.Password = c.GSSAPIPassword
+			} else if authType == 2 {
+				// KRB5_KEYTAB_AUTH
+				kafkaConfig.Net.SASL.GSSAPI.KeyTabPath = c.GSSAPIKeytabPath
+			}
+			
+			kafkaConfig.Net.SASL.GSSAPI.KerberosConfigPath = c.GSSAPIKerberosConfigPath
+			kafkaConfig.Net.SASL.GSSAPI.Username = c.GSSAPIUsername
+			kafkaConfig.Net.SASL.GSSAPI.Realm = c.GSSAPIRealm
+			kafkaConfig.Net.SASL.GSSAPI.DisablePAFXFAST = c.GSSAPIDisablePAFXFAST
 		case "plain":
 		default:
-			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
+			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\", \"gssapi\" or \"plain\"", c.SASLMechanism)
 		}
 
 		kafkaConfig.Net.SASL.Enable = true
@@ -225,7 +271,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 }
 
 func (c *Config) saslEnabled() bool {
-	return c.SASLUsername != "" || c.SASLPassword != "" || c.SASLMechanism == "aws-iam"
+	return c.SASLUsername != "" || c.SASLPassword != "" || c.SASLMechanism == "aws-iam" || c.SASLMechanism == "gssapi"
 }
 
 func NewTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
@@ -344,6 +390,14 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLTokenUrl,
 		config.SASLAWSSharedConfigFiles,
 		config.SASLOAuthScopes,
+		config.GSSAPIAuthType,
+		config.GSSAPIKeytabPath,
+		config.GSSAPIKerberosConfigPath,
+		config.GSSAPIServiceName,
+		config.GSSAPIUsername,
+		"*****",
+		config.GSSAPIRealm,
+		config.GSSAPIDisablePAFXFAST,
 	}
 	return copy
 }

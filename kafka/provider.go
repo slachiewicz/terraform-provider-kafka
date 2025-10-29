@@ -163,7 +163,56 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_MECHANISM", "plain"),
-				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256, aws-iam",
+				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256, aws-iam, gssapi",
+			},
+			"gssapi_auth_type": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_AUTH_TYPE", ""),
+				Description: "GSSAPI authentication type. Can be KRB5_USER_AUTH (1), KRB5_KEYTAB_AUTH (2), or KRB5_CCACHE_AUTH (3). Default is KRB5_KEYTAB_AUTH.",
+			},
+			"gssapi_keytab_path": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_KEYTAB_PATH", ""),
+				Description: "Path to the keytab file for GSSAPI authentication.",
+			},
+			"gssapi_kerberos_config_path": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_KERBEROS_CONFIG_PATH", ""),
+				Description: "Path to the Kerberos configuration file (krb5.conf).",
+			},
+			"gssapi_service_name": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_SERVICE_NAME", "kafka"),
+				Description: "GSSAPI service name. Default is 'kafka'.",
+			},
+			"gssapi_username": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_USERNAME", ""),
+				Description: "GSSAPI username (Kerberos principal).",
+			},
+			"gssapi_password": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_PASSWORD", ""),
+				Description: "GSSAPI password for KRB5_USER_AUTH authentication type.",
+			},
+			"gssapi_realm": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_REALM", ""),
+				Description: "GSSAPI realm.",
+			},
+			"gssapi_disable_pafx_fast": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_GSSAPI_DISABLE_PAFX_FAST", "false"),
+				Description: "Disable PA-FX-FAST for GSSAPI authentication.",
 			},
 			"skip_tls_verify": {
 				Type:        schema.TypeBool,
@@ -206,9 +255,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {
-	case "scram-sha512", "scram-sha256", "aws-iam", "oauthbearer", "plain":
+	case "scram-sha512", "scram-sha256", "aws-iam", "oauthbearer", "plain", "gssapi":
 	default:
-		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\" or \"plain\"", saslMechanism)
+		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\", \"gssapi\" or \"plain\"", saslMechanism)
 	}
 
 	config := &Config{
@@ -237,6 +286,14 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLMechanism:                          saslMechanism,
 		TLSEnabled:                             d.Get("tls_enabled").(bool),
 		Timeout:                                d.Get("timeout").(int),
+		GSSAPIAuthType:                         d.Get("gssapi_auth_type").(string),
+		GSSAPIKeytabPath:                       d.Get("gssapi_keytab_path").(string),
+		GSSAPIKerberosConfigPath:               d.Get("gssapi_kerberos_config_path").(string),
+		GSSAPIServiceName:                      d.Get("gssapi_service_name").(string),
+		GSSAPIUsername:                         d.Get("gssapi_username").(string),
+		GSSAPIPassword:                         d.Get("gssapi_password").(string),
+		GSSAPIRealm:                            d.Get("gssapi_realm").(string),
+		GSSAPIDisablePAFXFAST:                  d.Get("gssapi_disable_pafx_fast").(bool),
 	}
 
 	if config.CACert == "" {
