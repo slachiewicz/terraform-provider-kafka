@@ -138,7 +138,11 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 		}
 		kafkaConfig.Version = version
 	} else {
-		kafkaConfig.Version = sarama.V2_7_0_0
+		// Set to Kafka 3.8.0 as a reasonable default for Kafka 3.x clusters.
+		// With Sarama 1.46+, ApiVersionsRequest is enabled by default, which means
+		// Sarama will automatically query each broker for supported API versions
+		// and negotiate up or down as needed. This version acts as a maximum constraint.
+		kafkaConfig.Version = sarama.V3_8_0_0
 	}
 
 	kafkaConfig.ClientID = "terraform-provider-kafka"
