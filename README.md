@@ -52,8 +52,11 @@ your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.
     ```
 0. Build the provider `make build`
 0. Run the tests `make test`
-0. Start a TLS enabled kafka-cluster `docker-compose up`
+0. Start a TLS enabled kafka-cluster `docker compose up` (defaults to Kafka 3.9.1)
+   - For Kafka 3: `make docker-up-kafka3` or `KAFKA_VERSION=3.9.1 docker compose up -d --wait`
+   - For Kafka 4: `make docker-up-kafka4` or `KAFKA_VERSION=4.1.0 docker compose up -d --wait`
 0. Run the acceptance tests `make testacc`
+0. Stop the kafka cluster `make docker-down` or `docker compose down -v`
 
 ## Provider Configuration
 
@@ -392,6 +395,60 @@ The provider requires `bootstrap_servers` at initialization time. For dynamic en
 - Use `count` or `for_each` on resources instead of conditional provider configuration
 
 For detailed troubleshooting, see our [Troubleshooting Guide](docs/guides/troubleshooting.md).
+
+## Testing
+
+The provider integration test suite supports multiple Kafka versions through Docker Compose. The test suite is validated against:
+
+- **Kafka 3** (specifically 3.9.1)
+- **Kafka 4** (specifically 4.1.0)
+
+### Running Tests with Different Kafka Versions
+
+The docker-compose configuration uses **YAML anchors** to reduce duplication. To run tests with a specific Kafka version, use one of the following methods:
+
+1. **Using make targets (recommended):**
+   ```bash
+   make docker-up-kafka3   # Start Kafka 3.9.1 cluster
+   make testacc            # Run acceptance tests
+   make docker-down        # Stop the cluster
+   
+   # Or for Kafka 4
+   make docker-up-kafka4   # Start Kafka 4.1.0 cluster
+   make testacc
+   make docker-down
+   ```
+
+2. **Using environment variable:**
+   ```bash
+   # Kafka 3
+   KAFKA_VERSION=3.9.1 docker compose up -d --wait
+   make testacc
+   docker compose down -v
+   
+   # Kafka 4  
+   KAFKA_VERSION=4.1.0 docker compose up -d --wait
+   make testacc
+   docker compose down -v
+   ```
+
+### Configuration Architecture
+
+The docker-compose setup uses **YAML anchors and fragments** (similar to [Sarama](https://github.com/IBM/sarama)) to:
+- Reduce duplication across broker definitions (reduced from 121 to 77 lines - 36% reduction)
+- Define shared configuration once using `x-kafka-base` and `kafka-base-env` anchors
+- Allow easy maintenance and updates across all brokers
+
+The only environment variable that needs to be set is `KAFKA_VERSION` to select between Kafka 3.9.1 and 4.1.0. All other configuration settings (logging, authorization, SSL, etc.) are fixed and identical for both versions.
+
+### CI/CD Protections
+
+The GitHub Actions workflow includes protections against flaky test failures:
+- **Test parallelism limiting**: `GOMAXPROCS=2` reduces concurrent test execution to minimize "text file busy" errors from terraform-plugin-sdk
+- **Automatic retry**: Tests automatically retry up to 3 times on failure to handle intermittent CI issues
+- Tests pass if any of the 3 attempts succeeds
+
+These protections help mitigate known terraform-plugin-sdk test harness issues in CI environments where multiple parallel tests can compete for the terraform binary.
 
 ## Documentation
 

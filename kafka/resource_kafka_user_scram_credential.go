@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -179,7 +180,33 @@ func userScramCredentialCreate(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	d.SetId(userScramCredential.ID())
-	return nil
+	
+	// Retry reading the credential to ensure it's available (important for Kafka 4.x)
+	// Kafka 4.x may have a slight delay before credentials become visible
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		diags := userScramCredentialRead(ctx, d, meta)
+		if diags.HasError() {
+			// If there's an error other than "not found", return it
+			return diags
+		}
+		
+		// Check if the resource was found (ID will be empty if not found)
+		if d.Id() != "" {
+			// Successfully read the credential
+			return diags
+		}
+		
+		if i < maxRetries-1 {
+			log.Printf("[INFO] User scram credential not yet available, retrying (%d/%d)...", i+1, maxRetries)
+			// Reset the ID for the next retry
+			d.SetId(userScramCredential.ID())
+			time.Sleep(time.Second * 1)
+		}
+	}
+	
+	// If we exhausted retries, return an error
+	return diag.Errorf("User scram credential %s was created but could not be found after %d retries", userScramCredential.Name, maxRetries)
 }
 
 func userScramCredentialRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
