@@ -1,5 +1,7 @@
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 KAFKA_BOOTSTRAP_SERVERS ?= localhost:9092
+# Kafka version for testing - use "3.9.1" for Kafka 3.x or "4.1.0" for Kafka 4.x
+KAFKA_VERSION ?= 3.9.1
 default: build
 
 build:
@@ -20,3 +22,16 @@ testacc:
 	TF_ACC=1 go test ./kafka -v $(TESTARGS) -timeout 9m -count=1
 
 .PHONY: build test testacc
+
+# Docker compose helpers for different Kafka versions
+docker-up:
+	KAFKA_VERSION=$(KAFKA_VERSION) docker compose up -d --wait
+
+docker-up-kafka3:
+	KAFKA_VERSION=3.9.1 docker compose up -d --wait
+
+docker-up-kafka4:
+	KAFKA_VERSION=4.1.0 docker compose up -d --wait
+
+docker-down:
+	docker compose down -v
