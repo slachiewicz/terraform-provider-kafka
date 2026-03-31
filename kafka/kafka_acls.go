@@ -123,22 +123,22 @@ func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilte
 	if c.aclDeletionQueue.timer != nil {
 		c.aclDeletionQueue.timer.Stop()
 	}
-	c.aclDeletionQueue.filters = append(c.aclDeletionQueue.filters, filter)
+	c.filters = append(c.filters, filter)
 	c.aclDeletionQueue.waitChans = append(c.aclDeletionQueue.waitChans, make(chan error))
 	var waitChan = c.aclDeletionQueue.waitChans[len(c.aclDeletionQueue.waitChans)-1]
 
 	c.aclDeletionQueue.timer = time.AfterFunc(c.aclDeletionQueue.after, func() {
 		c.aclDeletionQueue.mutex.Lock()
 		defer c.aclDeletionQueue.mutex.Unlock()
-		log.Printf("[INFO] Deleting ACLs %v", c.aclDeletionQueue.filters)
+		log.Printf("[INFO] Deleting ACLs %v", c.filters)
 		defer func() {
 			c.aclDeletionQueue.timer = nil
-			c.aclDeletionQueue.filters = nil
+			c.filters = nil
 			c.aclDeletionQueue.waitChans = nil
 		}()
 		req := &sarama.DeleteAclsRequest{
 			Version: int(c.getDeleteAclsRequestAPIVersion()),
-			Filters: c.aclDeletionQueue.filters,
+			Filters: c.filters,
 		}
 
 		res, err := broker.DeleteAcls(req)
@@ -197,22 +197,22 @@ func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreat
 		c.aclCreationQueue.timer.Stop()
 	}
 	log.Printf("[DEBUG] Enqueueing ACL Creation %v", create.Acl)
-	c.aclCreationQueue.creations = append(c.aclCreationQueue.creations, create)
+	c.creations = append(c.creations, create)
 	c.aclCreationQueue.waitChans = append(c.aclCreationQueue.waitChans, make(chan error))
 
 	var waitChan = c.aclCreationQueue.waitChans[len(c.aclCreationQueue.waitChans)-1]
 	c.aclCreationQueue.timer = time.AfterFunc(c.aclCreationQueue.after, func() {
 		c.aclCreationQueue.mutex.Lock()
 		defer c.aclCreationQueue.mutex.Unlock()
-		log.Printf("[INFO] Creating ACLs %v", c.aclCreationQueue.creations)
+		log.Printf("[INFO] Creating ACLs %v", c.creations)
 		defer func() {
 			c.aclCreationQueue.timer = nil
-			c.aclCreationQueue.creations = nil
+			c.creations = nil
 			c.aclCreationQueue.waitChans = nil
 		}()
 		req := &sarama.CreateAclsRequest{
 			Version:      c.getCreateAclsRequestAPIVersion(),
-			AclCreations: c.aclCreationQueue.creations,
+			AclCreations: c.creations,
 		}
 
 		res, err := broker.CreateAcls(req)
@@ -435,18 +435,18 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 //nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) InvalidateACLCache() {
 	c.aclCache.mutex.Lock()
-	c.aclCache.valid = false
-	c.aclCache.acls = nil
+	c.valid = false
+	c.acls = nil
 	c.aclCache.mutex.Unlock()
 }
 
 //nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	c.aclCache.mutex.RLock()
-	if c.aclCache.valid {
+	if c.valid {
 		c.aclCache.mutex.RUnlock()
 		log.Printf("[INFO] Using cached ACL list")
-		return c.aclCache.acls, nil
+		return c.acls, nil
 	}
 	c.aclCache.mutex.RUnlock()
 
@@ -531,7 +531,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 
 		res = append(res, aclsR.ResourceAcls...)
 	}
-	c.aclCache.valid = true
-	c.aclCache.acls = res
+	c.valid = true
+	c.acls = res
 	return res, nil
 }
